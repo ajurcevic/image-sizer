@@ -5,13 +5,6 @@ import { ALL_SIZES, getSizeById } from "@/lib/image-sizes";
 import { serverResizeBatch } from "@/lib/server-resize";
 import { SizeDefinition } from "@/lib/types";
 
-export const config = {
-  api: {
-    bodyParser: false,
-  },
-};
-
-// Allow uploads up to 10MB
 export const maxDuration = 30;
 
 export async function POST(request: NextRequest) {
