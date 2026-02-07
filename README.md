@@ -1,5 +1,7 @@
 # image sizer
 
+![image sizer screenshot](public/screenshot.png)
+
 A browser-based image resizer that generates app icons and assets for iOS, Android, web, and social media. Upload an image, pick your sizes, and download everything as a ZIP.
 
 ## features
