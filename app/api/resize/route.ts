@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import sharp from "sharp";
 import JSZip from "jszip";
-import { ALL_SIZES, getSizeById } from "@/lib/image-sizes";
+import { getSizeById } from "@/lib/image-sizes";
 import { serverResizeBatch } from "@/lib/server-resize";
 import { SizeDefinition } from "@/lib/types";
 
@@ -34,31 +34,41 @@ export async function POST(request: NextRequest) {
     }
 
     // Resolve size definitions
-    const sizes: SizeDefinition[] = sizeIds
-      .map((id) => {
-        // Check if it's a custom size (format: custom-WxH)
-        if (id.startsWith("custom-")) {
-          const match = id.match(/^custom-(\d+)x(\d+)$/);
-          if (match) {
-            const w = parseInt(match[1], 10);
-            const h = parseInt(match[2], 10);
-            return {
-              id,
-              label: `Custom ${w}x${h}`,
-              width: w,
-              height: h,
-              format: "png" as const,
-              filename: `custom-${w}x${h}.png`,
-              category: "custom",
-            };
-          }
+    const sizes: SizeDefinition[] = [];
+    const failedIds: string[] = [];
+
+    for (const id of sizeIds) {
+      if (id.startsWith("custom-")) {
+        const match = id.match(/^custom-(\d+)x(\d+)$/);
+        if (match) {
+          const w = parseInt(match[1], 10);
+          const h = parseInt(match[2], 10);
+          sizes.push({
+            id,
+            label: `Custom ${w}x${h}`,
+            width: w,
+            height: h,
+            format: "png" as const,
+            filename: `custom-${w}x${h}.png`,
+            category: "custom",
+          });
+          continue;
         }
-        return getSizeById(id);
-      })
-      .filter((s): s is SizeDefinition => s !== undefined);
+      }
+
+      const preset = getSizeById(id);
+      if (preset) {
+        sizes.push(preset);
+      } else {
+        failedIds.push(id);
+      }
+    }
 
     if (sizes.length === 0) {
-      return NextResponse.json({ error: "No valid sizes selected" }, { status: 400 });
+      return NextResponse.json(
+        { error: `No valid sizes selected${failedIds.length > 0 ? `. Unrecognized size IDs: ${failedIds.join(", ")}` : ""}` },
+        { status: 400 }
+      );
     }
 
     const results = await serverResizeBatch(buffer, sizes);

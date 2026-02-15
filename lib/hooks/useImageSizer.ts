@@ -183,8 +183,14 @@ export function useImageSizer() {
         });
 
         if (!response.ok) {
-          const data = await response.json();
-          throw new Error(data.error || "Server processing failed");
+          let message = "Server processing failed";
+          try {
+            const data = await response.json();
+            if (data.error) message = data.error;
+          } catch {
+            // Response body is not JSON (e.g. HTML error page)
+          }
+          throw new Error(message);
         }
 
         const blob = await response.blob();
